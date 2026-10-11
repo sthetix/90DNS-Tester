@@ -15,7 +15,7 @@ The async path is under investigation. A blocked result confirms the returned ad
 
 ## Using 90DNS Tester
 
-Extract the ZIP to the SD card and launch `/switch/Switch_90DNS_tester.nro` from the Homebrew Menu. Tests start automatically. Press X to retry both tests and B to exit after the run.
+Extract the ZIP to the SD card and launch `/switch/Switch_90DNS_tester/Switch_90DNS_tester.nro` from the Homebrew Menu. Tests start automatically. Press X to retry both tests and B to exit after the run.
 
 | Status | Meaning |
 | --- | --- |
@@ -38,7 +38,7 @@ Requires [devkitPro](https://devkitpro.org/) with libnx installed.
 make
 ```
 
-`make` builds `Switch_90DNS_tester.nro` and creates `Switch_90DNS_tester-1.0.4.zip` containing `switch/Switch_90DNS_tester.nro`. The name stays fixed when Docker mounts the project at `/work`. Use the existing devkitPro PowerShell/Docker wrapper or a configured devkitPro shell.
+`make` builds `Switch_90DNS_tester.nro` and creates `Switch_90DNS_tester-1.0.5.zip` containing `switch/Switch_90DNS_tester/Switch_90DNS_tester.nro`, ready to extract to the SD card. The name stays fixed when Docker mounts the project at `/work`. Use the existing devkitPro PowerShell/Docker wrapper or a configured devkitPro shell.
 
 ## Credits
 

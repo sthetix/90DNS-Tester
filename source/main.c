@@ -114,7 +114,7 @@ void checkHostnames()
         time_t now = time(NULL);
         struct tm *timestamp = localtime(&now);
         char date[32];
-        fprintf(log, "\n=== 90DNS Testing Utility v1.0.4 ===\n");
+        fprintf(log, "\n=== 90DNS Testing Utility v1.0.5 ===\n");
         if (timestamp && strftime(date, sizeof(date), "%Y-%m-%d %H:%M:%S", timestamp))
             fprintf(log, "Time: %s (console clock)\n", date);
         fprintf(log, "Firmware: %u.%u.%u\n", HOSVER_MAJOR(version), HOSVER_MINOR(version), HOSVER_MICRO(version));
@@ -122,7 +122,7 @@ void checkHostnames()
         if (!asyncSupported)
             fprintf(log, "Async: N/A (requires FW 23 or newer)\n");
     }
-    printf(CONSOLE_CYAN "90DNS Testing Utility v1.0.4" CONSOLE_RESET "\n");
+    printf(CONSOLE_CYAN "90DNS Testing Utility v1.0.5" CONSOLE_RESET "\n");
     printf("FW %u.%u.%u  |  Legacy + Async%s  |  B: Exit  X: Retry\n", HOSVER_MAJOR(version), HOSVER_MINOR(version), HOSVER_MICRO(version), asyncSupported ? "" : " (N/A)");
     printf("DNS results do not verify all traffic is blocked.\n");
     printf("event-wait = no event within 2s; blocking unverified.\n");

@@ -43,7 +43,7 @@ SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
 
-APP_VERSION := 1.0.4
+APP_VERSION := 1.0.5
 APP_TITLE   := 90DNS Testing Utility
 APP_AUTHOR  := Nexrem
 ICON        := appicon.jpg
@@ -174,14 +174,14 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 dist: $(BUILD)
 	@echo Creating distribution package...
-	@mkdir -p switch
-	@cp $(TARGET).nro switch/
-	@echo Package created in switch/$(TARGET).nro
+	@mkdir -p switch/$(TARGET)
+	@cp $(TARGET).nro switch/$(TARGET)/
+	@echo Package created in switch/$(TARGET)/$(TARGET).nro
 
 #---------------------------------------------------------------------------------
 release: dist
 	@echo Creating zip archive...
-	@zip $(TARGET)-$(APP_VERSION).zip switch/ switch/$(TARGET).nro
+	@zip $(TARGET)-$(APP_VERSION).zip switch/ switch/$(TARGET)/ switch/$(TARGET)/$(TARGET).nro
 	@echo Created $(TARGET)-$(APP_VERSION).zip
 
 #---------------------------------------------------------------------------------
