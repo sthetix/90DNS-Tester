@@ -37,7 +37,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   of a homebrew executable (.nro). This is intended to be used for sysmodules.
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
-TARGET		:=	$(notdir $(CURDIR))
+TARGET		:=	Switch_90DNS_tester
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
@@ -165,7 +165,7 @@ endif
 .PHONY: $(BUILD) clean all dist release
 
 #---------------------------------------------------------------------------------
-all: $(BUILD)
+all: release
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
@@ -181,7 +181,7 @@ dist: $(BUILD)
 #---------------------------------------------------------------------------------
 release: dist
 	@echo Creating zip archive...
-	@zip -r $(TARGET)-$(APP_VERSION).zip switch
+	@zip $(TARGET)-$(APP_VERSION).zip switch/ switch/$(TARGET).nro
 	@echo Created $(TARGET)-$(APP_VERSION).zip
 
 #---------------------------------------------------------------------------------

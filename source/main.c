@@ -4,9 +4,58 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <errno.h>
+#include <time.h>
 #include "main.h"
 
 PrintConsole *console;
+static const char *statusNames[] = {
+    "blocked", "unblocked", "unresolved", "timeout", "offline", "error", "event-wait"
+};
+
+static void printResolverStatus(RESOLVER_STATUS status)
+{
+    const char *color = status == DNS_BLOCKED ? CONSOLE_GREEN : (status == DNS_RESOLVED ? CONSOLE_RED : CONSOLE_YELLOW);
+    printf("%s%-11s" CONSOLE_RESET, color, statusNames[status]);
+}
+
+const char *hostnames[] = {
+    "nintendo.com",
+    "nintendo.com",
+    "nintendo.net",
+    "nintendo.jp",
+    "nintendo.co.jp",
+    "nintendo.co.uk",
+    "nintendo-europe.com",
+    "nintendowifi.net",
+    "nintendo.es",
+    "nintendo.co.kr",
+    "nintendo.tw",
+    "nintendo.com.hk",
+    "nintendo.com.au",
+    "nintendo.co.nz",
+    "nintendo.at",
+    "nintendo.be",
+    "nintendods.cz",
+    "nintendo.dk",
+    "nintendo.de",
+    "nintendo.fi",
+    "nintendo.fr",
+    "nintendo.gr",
+    "nintendo.hu",
+    "nintendo.it",
+    "nintendo.nl",
+    "nintendo.no",
+    "nintendo.pt",
+    "nintendo.ru",
+    "nintendo.co.za",
+    "nintendo.se",
+    "nintendo.ch",
+    "nintendoswitch.cn",
+    "nintendoswitch.com.cn",
+    "nintendoswitch.com",
+    "sun.hac.lp1.d4c.nintendo.net"
+};
 
 int main(int argc, char **argv)
 {
@@ -55,51 +104,101 @@ int main(int argc, char **argv)
 
 void checkHostnames() 
 {
-    printf("90DNS Testing Utility v1.0.4\n\n");
+    const char *logPath = "sdmc:/90dns-test-log.txt";
+    bool asyncSupported = hosversionAtLeast(23, 0, 0);
+    u32 version = hosversionGet();
+    unsigned int legacyBlocked = 0, asyncBlocked = 0, asyncUnblocked = 0;
+    unsigned int total = sizeof(hostnames) / sizeof(hostnames[0]);
+    FILE *log = fopen(logPath, "a");
+    if (log) {
+        time_t now = time(NULL);
+        struct tm *timestamp = localtime(&now);
+        char date[32];
+        fprintf(log, "\n=== 90DNS Testing Utility v1.0.4 ===\n");
+        if (timestamp && strftime(date, sizeof(date), "%Y-%m-%d %H:%M:%S", timestamp))
+            fprintf(log, "Time: %s (console clock)\n", date);
+        fprintf(log, "Firmware: %u.%u.%u\n", HOSVER_MAJOR(version), HOSVER_MINOR(version), HOSVER_MICRO(version));
+        fprintf(log, "Legacy: gethostbyname | Async: FW 23 Query + Fetch\nDNS results do not prove that all traffic is blocked.\n");
+        if (!asyncSupported)
+            fprintf(log, "Async: N/A (requires FW 23 or newer)\n");
+    }
+    printf(CONSOLE_CYAN "90DNS Testing Utility v1.0.4" CONSOLE_RESET "\n");
+    printf("FW %u.%u.%u  |  Legacy + Async%s  |  B: Exit  X: Retry\n", HOSVER_MAJOR(version), HOSVER_MINOR(version), HOSVER_MICRO(version), asyncSupported ? "" : " (N/A)");
+    printf("DNS results do not verify all traffic is blocked.\n");
+    printf("event-wait = no event within 2s; blocking unverified.\n");
 
     // Check if system says we're connected to a network (wifi or ethernet)
-    Result net_rc = nifmGetInternetConnectionStatus(NULL, NULL, NULL);
-    if (R_FAILED(net_rc)) {
-        printf(CONSOLE_RED "WARNING, NOT CONNECTED TO ANY NETWORK! AIRPLANE MODE?\n" CONSOLE_RESET);
+    u32 ip = 0;
+    Result net_rc = nifmGetCurrentIpAddress(&ip);
+    bool offline = R_FAILED(net_rc) || ip == 0;
+    if (offline) {
+        printf(CONSOLE_YELLOW "Network unavailable; blocking cannot be verified.\n" CONSOLE_RESET);
+    }
+    if (log) {
+        if (offline)
+            fprintf(log, "Network unavailable; blocking cannot be verified.\n");
+        fprintf(log, "%-38s %-11s %-11s\n", "Domain", "Legacy", "Async");
     }
 
-    printf("Testing:\n");
+    printf("\n" CONSOLE_CYAN "%-38s %-11s %-11s\n" CONSOLE_RESET, "Domain", "Legacy", "Async");
 
     // Iterate through hostnames array
     for (int i = 0; i < sizeof(hostnames)/sizeof(hostnames[0]); i++)
     {
-        // Print the hostname
-        printf("\x1b[2C%s", hostnames[i]);
-        // Move the cursor and print progress dots
-        printf("\x1b[%dC", 40-console->cursorX);
-        printf("...");
-        // Update console here so we get a "live" output
+        printf("%-38s %-11s %-11s\r", hostnames[i], "...", asyncSupported ? "pending" : "N/A");
         consoleUpdate(console);
 
-        // Resolve the hostname
-        int result = resolveHostname(hostnames[i]);
+        RESOLVER_STATUS legacy = offline ? DNS_OFFLINE : resolveHostname(hostnames[i]);
+        printf("%-38s ", hostnames[i]);
+        printResolverStatus(legacy);
+        printf(" %-11s\r", asyncSupported ? "..." : "N/A");
+        consoleUpdate(console);
 
-        // Move the cursor back 3 steps to overwrite the dots and print status
-        printf("\x1b[3D");
-        switch(result) {
-            case DNS_BLOCKED:
-                printf(CONSOLE_GREEN "blocked");
-                break;
-            case DNS_RESOLVED:
-                printf(CONSOLE_RED "unblocked");
-                break;
-            case DNS_UNRESOLVED:
-                printf(CONSOLE_YELLOW "unresolved");
-                break;
+        RESOLVER_STATUS async = DNS_ERROR;
+        if (asyncSupported)
+            async = offline ? DNS_OFFLINE : resolveHostnameAsync(hostnames[i], log);
+        legacyBlocked += legacy == DNS_BLOCKED;
+        if (asyncSupported) {
+            asyncBlocked += async == DNS_BLOCKED;
+            asyncUnblocked += async == DNS_RESOLVED;
+        }
+        if (log) {
+            fprintf(log, "%-38s %-11s %-11s\n", hostnames[i], statusNames[legacy], asyncSupported ? statusNames[async] : "N/A");
+            fflush(log);
         }
 
-        // Reprint hostname with changed color
-        printf("\x1b[%dD%s\n" CONSOLE_RESET, console->cursorX-2, hostnames[i]);
-
+        printf("%-38s ", hostnames[i]);
+        printResolverStatus(legacy);
+        printf(" ");
+        if (asyncSupported)
+            printResolverStatus(async);
+        else
+            printf(CONSOLE_YELLOW "%-11s" CONSOLE_RESET, "N/A");
+        printf("\n");
         consoleUpdate(console);
     }
 
-    printf("\nPress B to exit. Press X to retry.");
+    if (log) {
+        fprintf(log, "Summary: Legacy %u/%u blocked\n", legacyBlocked, total);
+        if (asyncSupported)
+            fprintf(log, "Async: %u blocked, %u unblocked, %u unverified\n", asyncBlocked, asyncUnblocked, total - asyncBlocked - asyncUnblocked);
+        fprintf(log, "Press B to exit. Press X to retry.\n");
+        bool logFailed = ferror(log) != 0;
+        if (fclose(log) != 0)
+            logFailed = true;
+        if (logFailed)
+            printf(CONSOLE_YELLOW "Log write failed: %s\n" CONSOLE_RESET, logPath);
+        else
+            printf("Log saved: %s\n", logPath);
+    }
+    else {
+        printf(CONSOLE_YELLOW "Cannot open log: %s\n" CONSOLE_RESET, logPath);
+    }
+    printf("Legacy: %u/%u blocked", legacyBlocked, total);
+    if (asyncSupported)
+        printf(" | Async: %u blocked, %u unblocked, %u unknown", asyncBlocked, asyncUnblocked, total - asyncBlocked - asyncUnblocked);
+    printf("\n");
+    printf("B: Exit  |  X: Retry both tests");
     consoleUpdate(console);
 }
 
@@ -107,21 +206,30 @@ RESOLVER_STATUS resolveHostname(const char* hostname)
 {
     struct hostent *he;
     struct in_addr a;
-    // use gethostbyname to attempt hostname connection
+    // Resolve through the legacy API; this does not attempt a connection.
+    errno = 0;
     he = gethostbyname(hostname);
     if (he)
     {
-        // go over all returned addresses for hostname
-        while (*he->h_addr_list)
+        RESOLVER_STATUS result = DNS_UNRESOLVED;
+        if (he->h_addrtype != AF_INET || he->h_length != sizeof(a) || !he->h_addr_list)
         {
-            bcopy(*he->h_addr_list++, (char *) &a, sizeof(a));
-            // succeed if any of them redirect to localhost
-            if (strcmp(inet_ntoa(a), "127.0.0.1") == 0 || strcmp(inet_ntoa(a), "0.0.0.0") == 0)
-            {
-                return DNS_BLOCKED;
-            }
+            freehostent(he);
+            return DNS_UNRESOLVED;
         }
-        return DNS_RESOLVED;
+        // Every returned address must be blocked.
+        for (char **address = he->h_addr_list; *address; address++)
+        {
+            memcpy(&a, *address, sizeof(a));
+            if (a.s_addr != htonl(INADDR_LOOPBACK) && a.s_addr != htonl(INADDR_ANY))
+            {
+                result = DNS_RESOLVED;
+                break;
+            }
+            result = DNS_BLOCKED;
+        }
+        freehostent(he);
+        return result;
     }
-    return DNS_UNRESOLVED;
+    return errno == ETIMEDOUT ? DNS_TIMEOUT : DNS_UNRESOLVED;
 }
