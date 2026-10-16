@@ -1,14 +1,19 @@
 # 90DNS Tester
 
-A modified version of [Switch 90DNS Tester](https://github.com/meganukebmp/Switch_90DNS_tester), retaining the original application name. It displays legacy and FW 23 c-ares async resolver results side by side. The async additions are experimental local modifications, not an upstream release.
+A standalone Nintendo Switch DNS blocking tester with a HATS-style graphical interface. View all 35 domain entries on one screen and compare Legacy and c-ares results side by side.
 
-The async path is under investigation. A blocked result confirms the returned addresses for that query; it does not verify every application's traffic or guarantee protection from bans.
+![90DNS Tester v1.0.6 showing Legacy and c-ares results on firmware 23.0.1](assets/screenshot-v1.0.6.jpg)
+
+Based on [Switch 90DNS Tester](https://github.com/meganukebmp/Switch_90DNS_tester), originally authored by **Nexrem** and maintained by its contributors. This fork by **STHETIX** adds the graphical interface and c-ares testing; it is not an upstream release.
+
+A blocked result confirms the returned addresses for that query; it does not verify every application's traffic or guarantee protection from bans.
 
 ## Features
 
-- Tests Nintendo domains using legacy `gethostbyname` and FW 23 Query + Fetch (sfdnsres commands 100/102).
+- Tests Nintendo domains using Legacy (`gethostbyname`) and c-ares (FW 23 Query + Fetch, `sfdnsres` commands 100/102).
+- Displays all domain entries in two tables, with progress, summaries, and controller/touch controls.
 - Shows separate Legacy and c-ares columns, with green blocked, red unblocked, and yellow inconclusive results.
-- Checks every returned address: IPv4 `127.0.0.1`/`0.0.0.0` and async IPv6 `::1`/`::` count as blocked.
+- Checks every returned address: IPv4 `127.0.0.1`/`0.0.0.0` and c-ares IPv6 `::1`/`::` count as blocked.
 - Shows an end-of-run summary; unknown results are never counted as blocked.
 - On older firmware, c-ares displays N/A.
 - Appends results and IPC diagnostics to `sdmc:/90dns-test-log.txt`.
@@ -30,7 +35,7 @@ The screen shows separate Legacy and c-ares results, progress, blocked counts, s
 | pending | Query has not completed yet; not counted as blocked or unverified. |
 | N/A | c-ares requires firmware 23.0.0 or newer. |
 
-The log records console time, firmware, EventFd, Query, Poll, EventRead, Fetch when ready, and Cancel. The async event wait is limited to 2 seconds per domain; this is not a total runtime limit. Legacy DNS calls and other IPC calls may take additional time. The latest tested predecessor showed several async results followed by event timeouts; the cause remains unconfirmed.
+The log records console time, firmware, EventFd, Query, Poll, EventRead, Fetch when ready, and Cancel. The c-ares event wait is limited to 2 seconds per domain; this is not a total runtime limit. Legacy DNS calls and other IPC calls may take additional time.
 
 ## Building
 
@@ -53,3 +58,11 @@ The renderer is the NanoVG/deko3d implementation bundled with Daybreak, by Adubb
 ## License
 
 LGPL-3.0. See [COPYING](COPYING).
+
+## Support My Work
+
+If you find this project useful, please consider supporting me by buying me a coffee!
+
+<a href="https://www.buymeacoffee.com/sthetixofficial" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60" width="217">
+</a>
