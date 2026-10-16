@@ -1,10 +1,10 @@
 # 90DNS Tester
 
-A standalone Nintendo Switch DNS blocking tester with a HATS-style graphical interface. View all 35 domain entries on one screen and compare Legacy and c-ares results side by side.
+A standalone Nintendo Switch DNS blocking tester with a graphical interface. View all 35 domain entries on one screen and compare Legacy and c-ares results side by side.
 
 ![90DNS Tester v1.0.6 showing Legacy and c-ares results on firmware 23.0.1](assets/screenshot-v1.0.6.jpg)
 
-Based on [Switch 90DNS Tester](https://github.com/meganukebmp/Switch_90DNS_tester), originally authored by **Nexrem** and maintained by its contributors. This fork by **STHETIX** adds the graphical interface and c-ares testing; it is not an upstream release.
+Based on [Switch 90DNS Tester](https://github.com/meganukebmp/Switch_90DNS_tester), originally authored by **Nexrem** and maintained by its contributors. This fork adds the graphical interface and c-ares testing; it is not an upstream release.
 
 A blocked result confirms the returned addresses for that query; it does not verify every application's traffic or guarantee protection from bans.
 
@@ -20,7 +20,7 @@ A blocked result confirms the returned addresses for that query; it does not ver
 
 ## Using 90DNS Tester
 
-Extract the ZIP to the SD card and launch `/switch/Switch_90DNS_tester/Switch_90DNS_tester.nro` from the Homebrew Menu. Tests start automatically in a worker thread with a standalone GUI using a HATS-style dark theme. All domains are visible in two side-by-side tables without scrolling. Use X to retry after completion, and B or + to exit. Retry and Exit also accept touch input. Exit during a run waits for the current resolver call to return before closing services; legacy calls do not have a new timeout imposed by the GUI.
+Extract the ZIP to the SD card and launch `/switch/Switch_90DNS_tester/Switch_90DNS_tester.nro` from the Homebrew Menu. Tests start automatically in a worker thread with a standalone GUI using a dark theme. All domains are visible in two side-by-side tables without scrolling. Use X to retry after completion, and B or + to exit. Retry and Exit also accept touch input. Exit during a run waits for the current resolver call to return before closing services; legacy calls do not have a new timeout imposed by the GUI.
 
 The screen shows separate Legacy and c-ares results, progress, blocked counts, separate unblocked/unverified counts, and log write status. Pending queries are not counted as unverified. No firmware installation functionality or `ams:su` service is included.
 
@@ -49,7 +49,7 @@ make
 
 ## Credits
 
-Based on [Switch 90DNS Tester](https://github.com/meganukebmp/Switch_90DNS_tester), originally authored by Nexrem and maintained by its contributors. Local modifications are maintained by STHETIX. The application icon uses the HATS-style dark and mint palette. The previous icon is preserved in `assets/appicon-original.jpg`, and the new master image is in `assets/appicon.png`.
+Based on [Switch 90DNS Tester](https://github.com/meganukebmp/Switch_90DNS_tester), originally authored by Nexrem and maintained by its contributors. The application icon uses a dark and mint palette. The previous icon is preserved in `assets/appicon-original.jpg`, and the new master image is in `assets/appicon.png`.
 
 The FW 23 IPC layout and serialization were checked against [Atmosphere's DNS MITM implementation](https://github.com/Atmosphere-NX/Atmosphere/commit/f5cd912604c342faf884e776b1aaaa5f9b3b5e98).
 
