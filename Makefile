@@ -39,11 +39,12 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	Switch_90DNS_tester
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source nanovg/source nanovg/source/framework
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include nanovg/include nanovg/include/nanovg nanovg/include/nanovg/framework
+ROMFS		:=	romfs
 
-APP_VERSION := 1.0.5
+APP_VERSION := 1.0.6
 APP_TITLE   := 90DNS Testing Utility
 APP_AUTHOR  := Nexrem
 ICON        := appicon.jpg
@@ -58,12 +59,12 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
+CXXFLAGS	:= $(CFLAGS) -std=gnu++17 -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:=  -lnx
+LIBS	:=  -ldeko3d -lnx
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -165,9 +166,23 @@ endif
 .PHONY: $(BUILD) clean all dist release
 
 #---------------------------------------------------------------------------------
+SHADER_DIR := $(CURDIR)/romfs/shaders
+SHADERS := $(SHADER_DIR)/fill_vsh.dksh $(SHADER_DIR)/fill_fsh.dksh $(SHADER_DIR)/fill_aa_fsh.dksh
+
+export ROMFS_DEPS := $(SHADERS)
+
 all: release
 
-$(BUILD):
+$(SHADER_DIR):
+	@mkdir -p $@
+
+$(SHADER_DIR)/%_vsh.dksh: nanovg/shaders/%_vsh.glsl | $(SHADER_DIR)
+	@uam -s vert -o $@ $<
+
+$(SHADER_DIR)/%_fsh.dksh: nanovg/shaders/%_fsh.glsl | $(SHADER_DIR)
+	@uam -s frag -o $@ $<
+
+$(BUILD): $(SHADERS)
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
@@ -197,6 +212,8 @@ endif
 #---------------------------------------------------------------------------------
 else
 .PHONY:	all
+
+$(OUTPUT).nro: $(ROMFS_DEPS)
 
 DEPENDS	:=	$(OFILES:.o=.d)
 

@@ -72,7 +72,7 @@ RESOLVER_STATUS resolveHostnameAsync(const char* hostname, FILE *log)
     struct { s32 fd; s32 error; } eventOut = {-1, 0};
     Result rc = serviceDispatchInOut(bsdGetServiceSession(), 31, eventIn, eventOut);
     if (log)
-        fprintf(log, "[async %s] EventFd: rc=0x%08X fd=%d errno=%d\n", hostname, rc, eventOut.fd, eventOut.error);
+        fprintf(log, "[c-ares %s] EventFd: rc=0x%08X fd=%d errno=%d\n", hostname, rc, eventOut.fd, eventOut.error);
     if (R_FAILED(rc) || eventOut.fd < 0)
     {
         serviceClose(&resolver);
@@ -95,7 +95,7 @@ RESOLVER_STATUS resolveHostnameAsync(const char* hostname, FILE *log)
         .buffers = {{hostname, strlen(hostname) + 1}, {NULL, 0}, {NULL, 0}, {NULL, 0}},
     );
     if (log)
-        fprintf(log, "[async %s] Query: rc=0x%08X id=%u retval=%d errno=%d\n", hostname, rc, queryOut.id, queryOut.retval, queryOut.error);
+        fprintf(log, "[c-ares %s] Query: rc=0x%08X id=%u retval=%d errno=%d\n", hostname, rc, queryOut.id, queryOut.retval, queryOut.error);
 
     RESOLVER_STATUS status = DNS_ERROR;
     if (R_SUCCEEDED(rc) && queryOut.retval == 0)
@@ -103,13 +103,13 @@ RESOLVER_STATUS resolveHostnameAsync(const char* hostname, FILE *log)
         struct pollfd fd = {eventOut.fd, POLLIN, 0};
         int ready = bsdPoll(&fd, 1, 2000);
         if (log)
-            fprintf(log, "[async %s] Poll: ready=%d revents=0x%04X rc=0x%08X errno=%d wait=2000ms\n", hostname, ready, (unsigned short)fd.revents, g_bsdResult, g_bsdErrno);
+            fprintf(log, "[c-ares %s] Poll: ready=%d revents=0x%04X rc=0x%08X errno=%d wait=2000ms\n", hostname, ready, (unsigned short)fd.revents, g_bsdResult, g_bsdErrno);
         if (ready > 0 && (fd.revents & POLLIN))
         {
             u64 signal = 0;
             ssize_t readSize = bsdRead(eventOut.fd, &signal, sizeof(signal));
             if (log)
-                fprintf(log, "[async %s] EventRead: bytes=%ld signal=%llu rc=0x%08X errno=%d\n", hostname, (long)readSize, (unsigned long long)signal, g_bsdResult, g_bsdErrno);
+                fprintf(log, "[c-ares %s] EventRead: bytes=%ld signal=%llu rc=0x%08X errno=%d\n", hostname, (long)readSize, (unsigned long long)signal, g_bsdResult, g_bsdErrno);
             if (readSize != sizeof(signal))
                 goto cancel_query;
             u8 buffer[0x1000] = {0};
@@ -121,11 +121,15 @@ RESOLVER_STATUS resolveHostnameAsync(const char* hostname, FILE *log)
                 .buffers = {{buffer, sizeof(buffer)}},
             );
             if (log)
-                fprintf(log, "[async %s] Fetch: rc=0x%08X size=%u retval=%d errno=%d\n", hostname, rc, fetchOut.size, fetchOut.retval, fetchOut.error);
+                fprintf(log, "[c-ares %s] Fetch: rc=0x%08X size=%u retval=%d errno=%d\n", hostname, rc, fetchOut.size, fetchOut.retval, fetchOut.error);
             if (R_SUCCEEDED(rc))
             {
                 if (fetchOut.error == ETIMEDOUT)
+                {
                     status = DNS_TIMEOUT;
+                    if (log)
+                        fprintf(log, "[c-ares %s] Resolver timeout: blocking is unverified.\n", hostname);
+                }
                 else if (fetchOut.retval != 0)
                     status = DNS_UNRESOLVED;
                 else if (fetchOut.size <= sizeof(buffer))
@@ -135,8 +139,12 @@ RESOLVER_STATUS resolveHostnameAsync(const char* hostname, FILE *log)
         else
         {
             status = ready == 0 ? DNS_EVENT_WAIT : DNS_ERROR;
-            if (log)
-                fprintf(log, "[async %s] Fetch not attempted: event not ready; blocking is unverified.\n", hostname);
+            if (log) {
+                if (ready == 0)
+                    fprintf(log, "[c-ares %s] Event timeout: no completion event within 2000 ms. Fetch not attempted; blocking is unverified.\n", hostname);
+                else
+                    fprintf(log, "[c-ares %s] Event error: Fetch not attempted; blocking is unverified.\n", hostname);
+            }
         }
 
 cancel_query:;
@@ -144,11 +152,13 @@ cancel_query:;
         const struct { u32 id; u32 padding; u64 pid; } cancelIn = {queryOut.id, 0, 0};
         rc = serviceDispatchIn(&resolver, 104, cancelIn, .in_send_pid = true);
         if (log)
-            fprintf(log, "[async %s] Cancel: rc=0x%08X\n", hostname, rc);
+            fprintf(log, "[c-ares %s] Cancel: rc=0x%08X\n", hostname, rc);
     }
     else if (R_SUCCEEDED(rc))
     {
         status = queryOut.error == ETIMEDOUT ? DNS_TIMEOUT : DNS_UNRESOLVED;
+        if (log && status == DNS_TIMEOUT)
+            fprintf(log, "[c-ares %s] Resolver timeout: blocking is unverified.\n", hostname);
     }
 
     bsdClose(eventOut.fd);
