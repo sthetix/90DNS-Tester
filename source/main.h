@@ -19,7 +19,7 @@ typedef enum RESOLVER_STATUS {
 } RESOLVER_STATUS;
 
 RESOLVER_STATUS resolveHostname(const char* hostname);
-RESOLVER_STATUS resolveHostnameAsync(const char* hostname, FILE *log);
+RESOLVER_STATUS resolveHostnameAsync(const char* hostname);
 typedef bool (*DnsProgress)(void *context, unsigned int index, RESOLVER_STATUS legacy, RESOLVER_STATUS async);
 unsigned int hostnameCount(void);
 const char *hostnameAt(unsigned int index);

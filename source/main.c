@@ -5,12 +5,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <errno.h>
-#include <time.h>
 #include "main.h"
-
-static const char *statusNames[] = {
-    "blocked", "unblocked", "unresolved", "timeout", "offline", "error", "timeout"
-};
 
 const char *hostnames[] = {
     "nintendo.com",
@@ -63,31 +58,10 @@ const char *hostnameAt(unsigned int index)
 void checkHostnames(DnsProgress progress, void *context)
 {
     bool asyncSupported = hosversionAtLeast(23, 0, 0);
-    u32 version = hosversionGet();
-    unsigned int legacyBlocked = 0, asyncBlocked = 0, asyncUnblocked = 0;
     unsigned int total = hostnameCount();
-    FILE *log = fopen("sdmc:/90dns-test-log.txt", "a");
-    if (log) {
-        time_t now = time(NULL);
-        struct tm *timestamp = localtime(&now);
-        char date[32];
-        fprintf(log, "\n=== 90DNS Tester v1.0.6 ===\n");
-        if (timestamp && strftime(date, sizeof(date), "%Y-%m-%d %H:%M:%S", timestamp))
-            fprintf(log, "Time: %s (console clock)\n", date);
-        fprintf(log, "Firmware: %u.%u.%u\n", HOSVER_MAJOR(version), HOSVER_MINOR(version), HOSVER_MICRO(version));
-        fprintf(log, "Legacy: gethostbyname | c-ares: FW 23 Query + Fetch\nDNS results do not prove that all traffic is blocked.\n");
-        if (!asyncSupported)
-            fprintf(log, "c-ares: N/A (requires FW 23 or newer)\n");
-    }
     u32 ip = 0;
     Result net_rc = nifmGetCurrentIpAddress(&ip);
     bool offline = R_FAILED(net_rc) || ip == 0;
-    if (log) {
-        if (offline)
-            fprintf(log, "Network unavailable; blocking cannot be verified.\n");
-        fprintf(log, "%-38s %-11s %-11s\n", "Domain", "Legacy", "c-ares");
-    }
-    unsigned int completed = 0;
     for (unsigned int i = 0; i < total; i++) {
         if (!progress(context, i, DNS_PENDING, DNS_PENDING))
             break;
@@ -96,31 +70,11 @@ void checkHostnames(DnsProgress progress, void *context)
             break;
         RESOLVER_STATUS async = DNS_ERROR;
         if (asyncSupported)
-            async = offline ? DNS_OFFLINE : resolveHostnameAsync(hostnames[i], log);
-        legacyBlocked += legacy == DNS_BLOCKED;
-        if (asyncSupported) {
-            asyncBlocked += async == DNS_BLOCKED;
-            asyncUnblocked += async == DNS_RESOLVED;
-        }
-        completed++;
-        if (log) {
-            fprintf(log, "%-38s %-11s %-11s\n", hostnames[i], statusNames[legacy], asyncSupported ? statusNames[async] : "N/A");
-            fflush(log);
-        }
+            async = offline ? DNS_OFFLINE : resolveHostnameAsync(hostnames[i]);
         if (!progress(context, i, legacy, async))
             break;
     }
-    if (log) {
-        fprintf(log, "Completed: %u/%u domains\nSummary: Legacy %u/%u blocked\n", completed, total, legacyBlocked, total);
-        if (asyncSupported)
-            fprintf(log, "c-ares: %u blocked, %u unblocked, %u unverified (including unfinished queries)\n", asyncBlocked, asyncUnblocked, total - asyncBlocked - asyncUnblocked);
-        bool failed = ferror(log) != 0;
-        if (fclose(log) != 0)
-            failed = true;
-        progress(context, total, failed ? DNS_ERROR : DNS_BLOCKED, DNS_PENDING);
-    } else {
-        progress(context, total, DNS_ERROR, DNS_PENDING);
-    }
+    progress(context, total, DNS_BLOCKED, DNS_PENDING);
 }
 
 RESOLVER_STATUS resolveHostname(const char* hostname)

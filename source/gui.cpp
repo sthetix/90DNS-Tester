@@ -38,13 +38,10 @@ class DnsRun {
     std::vector<Row> rows;
     std::atomic<bool> stop{false};
     std::atomic<bool> running{false};
-    std::atomic<int> logStatus{0};
 
     static bool Progress(void *context, unsigned index, RESOLVER_STATUS legacy, RESOLVER_STATUS async) {
         auto &self = *static_cast<DnsRun *>(context);
-        if (index == self.rows.size()) {
-            self.logStatus.store(legacy == DNS_ERROR ? -1 : 1);
-        } else {
+        if (index != self.rows.size()) {
             mutexLock(&self.mutex);
             self.rows[index] = {legacy, async};
             mutexUnlock(&self.mutex);
@@ -62,7 +59,6 @@ public:
     DnsRun() : rows(hostnameCount()) { mutexInit(&mutex); }
     ~DnsRun() { Join(); }
     bool Running() const { return running.load(); }
-    int LogStatus() const { return logStatus.load(); }
     void Stop() { stop.store(true); }
     void Join() {
         if (created) {
@@ -77,7 +73,6 @@ public:
         Join();
         std::fill(rows.begin(), rows.end(), Row{});
         stop.store(false);
-        logStatus.store(0);
         Result rc = threadCreate(&thread, Worker, this, nullptr, 0x10000, 0x2C, -2);
         if (R_FAILED(rc)) return rc;
         created = true;
@@ -179,7 +174,7 @@ public:
         stencilMemory.destroy();
     }
 
-    void Draw(const std::vector<Row> &rows, bool running, bool stopping, int logStatus, Result error) {
+    void Draw(const std::vector<Row> &rows, bool running, bool stopping, Result error) {
         queue.waitIdle();
         commands.clear();
         const int slot = queue.acquireImage(swapchain);
@@ -249,9 +244,10 @@ public:
             }
         }
         Text(vg, 75, 578, "Blocked results cover these DNS queries only; they do not guarantee protection from bans.", 17, Theme::Muted);
-        if (R_FAILED(error)) snprintf(info, sizeof(info), "Worker error: 0x%08X", error);
-        else snprintf(info, sizeof(info), "%s", logStatus < 0 ? "Log write failed: sdmc:/90dns-test-log.txt" : logStatus > 0 ? "Log saved: sdmc:/90dns-test-log.txt" : "Log: sdmc:/90dns-test-log.txt");
-        Text(vg, 75, 604, info, 17, R_FAILED(error) || logStatus < 0 ? Theme::Error : Theme::Muted);
+        if (R_FAILED(error)) {
+            snprintf(info, sizeof(info), "Worker error: 0x%08X", error);
+            Text(vg, 75, 604, info, 17, Theme::Error);
+        }
         Rectangle(vg, 75, 640, 540, 36, running ? Theme::Panel : Theme::Selected);
         if (!running) Rectangle(vg, 75, 640, 3, 36, Theme::Accent, 0);
         Text(vg, 95, 647, running ? "Checking DNS..." : "X: Retry", 19, running ? Theme::Muted : Theme::Accent);
@@ -303,7 +299,7 @@ int main(int argc, char **argv) {
             if (!exiting && !run.Running() && (down & HidNpadButton_X)) {
                 rc = run.Start();
             }
-            display.Draw(run.Snapshot(), run.Running(), exiting, run.LogStatus(), rc);
+            display.Draw(run.Snapshot(), run.Running(), exiting, rc);
         }
         run.Join();
     }
