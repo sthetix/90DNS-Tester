@@ -45,7 +45,7 @@ INCLUDES	:=	include nanovg/include nanovg/include/nanovg nanovg/include/nanovg/f
 ROMFS		:=	romfs
 
 APP_VERSION := 1.0.6
-APP_TITLE   := 90DNS Testing Utility
+APP_TITLE   := 90DNS Tester
 APP_AUTHOR  := Nexrem
 ICON        := appicon.jpg
 

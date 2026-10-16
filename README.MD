@@ -44,7 +44,7 @@ make
 
 ## Credits
 
-Based on [Switch 90DNS Tester](https://github.com/meganukebmp/Switch_90DNS_tester), originally authored by Nexrem and maintained by its contributors. Local modifications are maintained by STHETIX. The application icon is inherited from the original project.
+Based on [Switch 90DNS Tester](https://github.com/meganukebmp/Switch_90DNS_tester), originally authored by Nexrem and maintained by its contributors. Local modifications are maintained by STHETIX. The application icon uses the HATS-style dark and mint palette. The previous icon is preserved in `assets/appicon-original.jpg`, and the new master image is in `assets/appicon.png`.
 
 The FW 23 IPC layout and serialization were checked against [Atmosphere's DNS MITM implementation](https://github.com/Atmosphere-NX/Atmosphere/commit/f5cd912604c342faf884e776b1aaaa5f9b3b5e98).
 

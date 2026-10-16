@@ -199,7 +199,7 @@ public:
         nvgBeginFrame(vg, Width, Height, 1);
         Rectangle(vg, 0, 0, Width, Height, Theme::Background, 0);
         Rectangle(vg, 55, 49, 4, 30, Theme::Accent, 0);
-        Text(vg, 75, 48, "90DNS Testing Utility", 30);
+        Text(vg, 75, 48, "90DNS Tester", 30);
         Rectangle(vg, 55, 114, 1170, 1, Theme::Line, 0);
         Rectangle(vg, 55, 630, 1170, 1, Theme::Line, 0);
         char info[256];

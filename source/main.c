@@ -71,7 +71,7 @@ void checkHostnames(DnsProgress progress, void *context)
         time_t now = time(NULL);
         struct tm *timestamp = localtime(&now);
         char date[32];
-        fprintf(log, "\n=== 90DNS Testing Utility v1.0.6 ===\n");
+        fprintf(log, "\n=== 90DNS Tester v1.0.6 ===\n");
         if (timestamp && strftime(date, sizeof(date), "%Y-%m-%d %H:%M:%S", timestamp))
             fprintf(log, "Time: %s (console clock)\n", date);
         fprintf(log, "Firmware: %u.%u.%u\n", HOSVER_MAJOR(version), HOSVER_MINOR(version), HOSVER_MICRO(version));
