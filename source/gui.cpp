@@ -116,6 +116,7 @@ void Status(NVGcontext *vg, float x, float y, RESOLVER_STATUS status) {
 }
 
 class Display {
+    char atmosphere[48] = "AMS unknown | ?";
     dk::UniqueDevice device;
     dk::UniqueQueue queue;
     dk::UniqueCmdBuf commands;
@@ -130,6 +131,21 @@ class Display {
 
 public:
     Display() {
+        if (R_SUCCEEDED(splInitialize())) {
+            u64 amsVersion = 0, emummcType = 0;
+            const Result versionResult = splGetConfig(static_cast<SplConfigItem>(65000), &amsVersion);
+            const Result modeResult = splGetConfig(static_cast<SplConfigItem>(65007), &emummcType);
+            const char mode = R_SUCCEEDED(modeResult) ? (emummcType != 0 ? 'E' : 'S') : '?';
+            if (R_SUCCEEDED(versionResult)) {
+                snprintf(atmosphere, sizeof(atmosphere), "AMS %u.%u.%u | %c",
+                    static_cast<unsigned>((amsVersion >> 56) & 0xFF),
+                    static_cast<unsigned>((amsVersion >> 48) & 0xFF),
+                    static_cast<unsigned>((amsVersion >> 40) & 0xFF), mode);
+            } else {
+                snprintf(atmosphere, sizeof(atmosphere), "AMS unknown | %c", mode);
+            }
+            splExit();
+        }
         device = dk::DeviceMaker{}.create();
         queue = dk::QueueMaker{device}.setFlags(DkQueueFlags_Graphics).create();
         images.emplace(device, DkMemBlockFlags_GpuCached | DkMemBlockFlags_Image, 24*1024*1024);
@@ -200,7 +216,7 @@ public:
         char info[256];
         u32 version = hosversionGet();
         bool asyncSupported = hosversionAtLeast(23, 0, 0);
-        snprintf(info, sizeof(info), "v1.0.6  |  FW %u.%u.%u  |  Legacy + c-ares%s", HOSVER_MAJOR(version), HOSVER_MINOR(version), HOSVER_MICRO(version), asyncSupported ? "" : " (FW 23+ required)");
+        snprintf(info, sizeof(info), "v1.0.7  |  FW %u.%u.%u  |  %s  |  Legacy + c-ares%s", HOSVER_MAJOR(version), HOSVER_MINOR(version), HOSVER_MICRO(version), atmosphere, asyncSupported ? "" : " (FW 23+ required)");
         Text(vg, 75, 89, info, 18, Theme::Muted);
 
         unsigned completed = 0, legacyBlocked = 0, asyncBlocked = 0;

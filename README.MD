@@ -16,6 +16,7 @@ A blocked result confirms the returned addresses for that query; it does not ver
 - Checks every returned address: IPv4 `127.0.0.1`/`0.0.0.0` and c-ares IPv6 `::1`/`::` count as blocked.
 - Shows an end-of-run summary; unknown results are never counted as blocked.
 - On older firmware, c-ares displays N/A.
+- Displays the running firmware and Atmosphère version, with E for emuMMC or S for sysMMC. Unavailable Atmosphère information is shown as unknown or ?.
 - Appends results and IPC diagnostics to `sdmc:/90dns-test-log.txt`.
 
 ## Using 90DNS Tester
@@ -45,7 +46,7 @@ Requires [devkitPro](https://devkitpro.org/) with libnx, deko3d, GLM headers, an
 make
 ```
 
-`make` builds `Switch_90DNS_tester.nro` and creates `Switch_90DNS_tester-1.0.6.zip` containing `switch/Switch_90DNS_tester/Switch_90DNS_tester.nro`, ready to extract to the SD card. The name stays fixed when Docker mounts the project at `/work`. Use the existing devkitPro PowerShell/Docker wrapper or a configured devkitPro shell.
+`make` builds `Switch_90DNS_tester.nro` and creates `Switch_90DNS_tester-1.0.7.zip` containing `switch/Switch_90DNS_tester/Switch_90DNS_tester.nro`, ready to extract to the SD card. The name stays fixed when Docker mounts the project at `/work`. Use the existing devkitPro PowerShell/Docker wrapper or a configured devkitPro shell.
 
 ## Credits
 
